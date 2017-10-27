@@ -1,34 +1,57 @@
 'use strict';
 
 const Koa = require('koa');
-const KoaLogger = require('koa-logger');
-const KoaBodyParser = require('koa-bodyparser');
+const KoaMount = require('koa-mount');
+const winston = require('winston');
 
-const Router = require('./router');
+const app = require('./app');
 
 class plantJournalRestApi {
     constructor(options) {
-        this.port = options.port || 8080;
+        this.options = options;
+        this.port = this.options.port || 8080;
+        this.apiPath = this.options.apiPath || '/api';
 
-        this.pj = new (require(options.apiConnector))(options.apiConnectorOptions);
+        this.initWinston();
+        this.initPj();
 
         this.koa = new Koa();
-        this.router = Router(options, this.pj);
+        this.koa.use(
+            KoaMount(
+                this.apiPath,
+                app(this.pjInstance, this.logger, this.options)
+            ));
 
-        this.koa
-            .use(KoaLogger())
-            .use(KoaBodyParser())
-            .use(this.router.routes())
-            .use(this.router.allowedMethods());
+        // Workaround for https://github.com/koajs/mount/issues/64
+        this.koa.context.logger = this.logger;
     }
 
-    async connect() {
-        return this.pj.connect();
+    initWinston() {
+        this.logger = new (winston.Logger)({
+            transports: [
+                new (winston.transports.Console)(),
+                new (winston.transports.File)({ filename: 'plantjournal-restapi.log' })
+            ],
+            level: 'silly',
+        });
     }
 
-    listen() {
+    initPj() {
+        this.pjModule = require(this.options.apiConnector);
+        this.pjInstance = new this.pjModule(
+            this.options.apiConnectorOptions);
+    }
+
+    async listen() {
+        try {
+            await this.pjInstance.connect();
+        }catch(err) {
+            this.logger.error(`Couldn't connect to api. Error:`, err);
+        }
         this.koa.listen(this.port);
-        console.log('plantJournalRestApi listening on port', this.port);
+        this.logger.info('plantJournalRestApi listening on port', this.port);
+        this.logger.info('Access api via http://localhost:' + this.port + this.apiPath);
+
     }
 }
 
@@ -38,11 +61,4 @@ let restApi = new plantJournalRestApi({
     port: 8080
 });
 
-restApi.connect()
-    .catch((err) => {
-        throw Error(`Couldn't connecto to api`);
-    })
-    .then(() => {
-        console.log('Connected to api');
-        restApi.listen();
-    });
+restApi.listen();

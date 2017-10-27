@@ -63,7 +63,7 @@ module.exports = function (pjInstance, options) {
 
     router
         .get('/', function (ctx, next) {
-            ctx.body = 'plantJournalRestApi';
+            ctx.body = 'Hello World!';
         })
         .get('/version', function(ctx, next) {
             ctx.body = {

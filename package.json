@@ -4,7 +4,17 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "mocha --recursive",
+    "test-unit": "mocha ./test/unit --recursive",
+    "test-integrate": "mocha ./test/integrate --recursive",
+    "coverage": "nyc npm test && nyc report --reporter=html --reporter=text",
+    "coverage-unit": "nyc npm run test-unit && nyc report --reporter=html --reporter=text",
+    "coverage-integrate": "nyc npm run test-integrate && nyc report --reporter=html --reporter=text",
+    "generate-docs": "rm -rf ./docs && jsdoc -r src -d docs",
+    "lint": "eslint \"src/**/*\" \"test/**/*\"",
+    "lint-fix": "eslint \"src/**/*\" \"test/**/*\" --fix",
+    "coveralls": "nyc npm test && nyc report --reporter=text-lcov | coveralls",
+    "build": "npm run lint && npm run generate-docs && npm test",
     "start": "node src/index.js"
   },
   "author": "",
@@ -12,10 +22,18 @@
   "dependencies": {
     "koa": "^2.3.0",
     "koa-bodyparser": "^4.2.0",
-    "koa-bunyan-logger": "^2.0.0",
-    "koa-logger": "^3.1.0",
+    "koa-mount": "^3.0.0",
     "koa-router": "^7.2.1",
     "lodash": "^4.17.4",
-    "plantjournal-api-sqlite3": "git+https://github.com/Nostradamos/plantjournal-api-sqlite3.git"
+    "winston": "^2.4.0"
+  },
+  "devDependencies": {
+    "plantjournal-api-sqlite3": "git+https://github.com/Nostradamos/plantjournal-api-sqlite3.git",
+    "coveralls": "^3.0.0",
+    "eslint": "^4.8.0",
+    "jsdoc": "^3.5.5",
+    "mocha": "^4.0.1",
+    "nyc": "^11.2.1",
+    "should": "^13.1.2"
   }
 }
